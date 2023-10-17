@@ -1,6 +1,6 @@
 package ru.mrgrd56.midi2keyboardkotlin.midi.minilab3
 
-import dev.b37.mgutils.CollectionUtils
+import ru.mrgrd56.midi2keyboardkotlin.midi.MidiEventType
 import java.util.*
 
 enum class Minilab3MidiEventType(code: Int) : MidiEventType {
@@ -11,15 +11,17 @@ enum class Minilab3MidiEventType(code: Int) : MidiEventType {
     KNOB(0xB0),
     PITCH(0xE0);
 
-    val code: Byte
+    private val _code: Int
 
     init {
-        this.code = code.toByte()
+        this._code = code
     }
 
+    override val code: Byte
+        get() = _code.toByte()
+
     companion object {
-        private val membersMap: Map<Byte, Minilab3MidiEventType> =
-            CollectionUtils.mapByKey(Arrays.asList(*values())) { obj: Minilab3MidiEventType -> obj.code }
+        private val membersMap: Map<Byte, Minilab3MidiEventType> = values().associateBy { it.code }
 
         fun valueOf(code: Byte): Minilab3MidiEventType {
             return membersMap[code]

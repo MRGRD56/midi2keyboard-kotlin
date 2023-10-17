@@ -1,6 +1,6 @@
 package ru.mrgrd56.midi2keyboardkotlin.midi
 
-class MultiMidiEventListener<T : MidiEventType> private constructor(
+class MappedMultiMidiEventListener<T : MidiEventType> private constructor(
     private val handlerMap: Map<HandlerKey<T>, MutableList<MidiEventListener<T>>>
 ) : MidiEventListener<T> {
 
@@ -18,7 +18,7 @@ class MultiMidiEventListener<T : MidiEventType> private constructor(
         }
 
         fun build(): MidiEventListener<T> {
-            return MultiMidiEventListener(handlerMap)
+            return MappedMultiMidiEventListener(handlerMap)
         }
     }
 

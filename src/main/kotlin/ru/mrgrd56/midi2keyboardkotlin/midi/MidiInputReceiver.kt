@@ -1,56 +1,64 @@
 package ru.mrgrd56.midi2keyboardkotlin.midi
 
+import java.util.concurrent.ConcurrentLinkedDeque
 import javax.sound.midi.*
 
-class MidiInputReceiver<T : MidiEventType?>(
+class MidiInputReceiver<T : MidiEventType>(
     deviceName: String,
     private val eventTypeProvider: MidiEventTypeProvider<T>
 ) {
-    private val device: MidiDevice? = null
+    private lateinit var device: MidiDevice
+
+    private val handlers = ConcurrentLinkedDeque<MidiEventListener<T>>()
 
     init {
-        try {
+        run {
             val midiInfos = MidiSystem.getMidiDeviceInfo()
             for (info in midiInfos) {
                 if (info.name != deviceName) {
                     continue
                 }
+
                 val device = MidiSystem.getMidiDevice(info)
+
                 if (device.maxTransmitters != 0) {
                     this.device = device
-                    return
+                    device.transmitter.receiver = this.InputReceiver(handlers)
+                    return@run
                 }
             }
-            throw RuntimeException(MidiUnavailableException("Midi device not found"))
-        } catch (e: MidiUnavailableException) {
-            throw RuntimeException(e)
+
+            throw MidiUnavailableException("Midi device not found")
         }
     }
 
-    fun listen(eventListener: MidiEventListener<T>): Receiver {
-        return try {
-            if (!device!!.isOpen) {
+    fun listen(handler: MidiEventListener<T>) {
+        try {
+            if (!device.isOpen) {
                 device.open()
             }
-            val receiver: Receiver = this.InputReceiver(eventListener)
-            device.transmitter.receiver = receiver
-            receiver
+
+            handlers += handler
         } catch (e: MidiUnavailableException) {
             throw RuntimeException(e)
         }
     }
 
-    private inner class InputReceiver(private val eventListener: MidiEventListener<T>) : Receiver {
+    private inner class InputReceiver(private val handlers: Collection<MidiEventListener<T>>) : Receiver {
+        private var isClosed: Boolean = false
+
         override fun send(message: MidiMessage, timeStamp: Long) {
+            if (isClosed) return
+
             val data = message.getMessage()
             if (data[0] != 0xF0.toByte()) {
                 val event = MidiEvent.parse(data, eventTypeProvider)
-                eventListener.onEvent(event)
+                handlers.forEach { it.onEvent(event) }
             }
         }
 
         override fun close() {
-            println("Closed")
+            isClosed = true
         }
     }
 }

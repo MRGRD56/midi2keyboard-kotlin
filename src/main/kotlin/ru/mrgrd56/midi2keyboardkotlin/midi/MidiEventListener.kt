@@ -1,5 +1,7 @@
 package ru.mrgrd56.midi2keyboardkotlin.midi
 
-fun interface MidiEventListener<T : MidiEventType?> {
-    fun onEvent(event: MidiEvent<T>?)
+import java.util.*
+
+fun interface MidiEventListener<T : MidiEventType> : EventListener {
+    fun onEvent(event: MidiEvent<T>)
 }
